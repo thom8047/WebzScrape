@@ -39,6 +39,8 @@ if __name__ == '__main__':
 """
 
 import time
+import textwrap; wrapper = textwrap.TextWrapper(width=20)
+import json
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -48,12 +50,15 @@ from lxml import html
 def wait(n):
     time.sleep(n)
     return True
+    
 def get_user_input():
     search = input('\nWhat would you like to search on AMAZON: ')
-    return search
+    return search.capitalize()
 def get_user_input_first():
     search = input('To EXIT search API, press enter when prompted for new search.\nWhat would you like to search on AMAZON: ')
     return search
+def wrap_text(text):
+    return wrapper.fill(text)
 
 
 
@@ -62,11 +67,25 @@ def get_user_input_first():
 class Client:
     def __init__(self):
         pass
+    
+    def write_data(self, data):
+        return json.dumps(data, indent="    ")
         
-    def get_data(self, page_source):
+    def get_data(self, page_source, driver):
         soup = BeautifulSoup(page_source, 'lxml')
         # get text
+
         data = []
+        try:
+            bestsellers = soup.findAll('a', {'class': 'a-link-normal'})
+            if len(bestsellers): print(len(bestsellers)); href = bestsellers[0].get('href'); data.append(
+                {
+                    'best_sellers_page': href       # Should give the best sellers webpage if it exists.
+                }
+                )
+        except:
+            print('...no best sellers page found\n')
+        
         for names in soup.findAll('div', {'class': 'a-section a-spacing-medium'}):
             name = names.find('span', {'class': 'a-text-normal'})
             price = names.find('span', {'class': 'a-offscreen'})
@@ -77,7 +96,11 @@ class Client:
                     price = price.get_text()
                     price = price[1:]
                     
-                    data.append([name, float(price)])
+                    element = {
+                        'name': name,
+                        'price': price
+                    }
+                    data.append(element)
         
         return data
         
@@ -87,13 +110,13 @@ class Client:
         driver.get(url)
         #   content = driver.page_source
         
-        search_bar, submit = driver.find_element_by_id('twotabsearchtextbox'), driver.find_element_by_id('nav-search-submit-text')
+        search_bar, submit = driver.find_element_by_xpath('//*[@id="twotabsearchtextbox"]'), driver.find_element_by_xpath('//*[@id="nav-search"]/form/div[2]/div/input')
         search_bar.send_keys(search)
         # HAD TO SWITCH EXCECUTION FOR CLICK DUE TO CLICK INTERCEPTION
         submit.submit()
         wait(2)
         
-        data = self.get_data(driver.page_source)
+        data = self.get_data(driver.page_source, driver)
         
         driver.close()
         
@@ -107,26 +130,20 @@ if __name__ == '__main__':
     
     while search:
         data = client.get_search(link, search)
+        jsonData = client.write_data(data)
         
-        text = ''
+        #text = ''
         
-        lowest = [10000.0, '']
-        for keys in data:
-            if keys[1] < lowest[0]:
-                lowest[0] = keys[1]; lowest[1] = keys[0]
-            text += (f'\nTitle: {keys[0]}\nCost: {keys[1]}\n+---------------------+')
+        lowest, highest = [10000.0, ''], [0, '']
+        for dic in data:
+            if 'price' in dic:
+                if float(dic['price']) < lowest[0]:
+                    lowest[0] = float(dic['price']); lowest[1] = dic['name']
+            else:
+                pass
         
-        print(f'Lowest Priced {search} is: {lowest[0]}; {lowest[1]}\n', text)
+        print(f'\nLowest Priced {search} is: {lowest[0]}; {lowest[1]}\n', jsonData)
         
         search = get_user_input() #     To continue loop
-    
-    
-
-
-
-
-
-
-
-
-
+    else:
+        print('Thank you for using automated parser.')
