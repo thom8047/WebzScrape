@@ -106,7 +106,8 @@ class Client:
         
     
     def get_search(self, url, search):
-        driver = webdriver.Chrome(executable_path='C:/Users/Kyle/Downloads/chromedriver_win32/chromedriver')
+        driver = webdriver.Chrome(executable_path='C:/bin/chromedriver')
+        wait(2)
         driver.get(url)
         #   content = driver.page_source
         
