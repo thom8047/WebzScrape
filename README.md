@@ -1,5 +1,7 @@
 # WebzScrape
 
+* First time web-scraping project. Next time will use the Amazon API to access the product data, hopefully for free. *
+
 ## OOP Project; Web scraper for Aamzon that allows multiple searches and returns unorganized, listed information of products matching search.
 
 ### Issues:
